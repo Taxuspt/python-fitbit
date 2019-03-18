@@ -7,6 +7,12 @@ class BadResponse(Exception):
     """
     pass
 
+class BadFormat(Exception):
+    """
+    Used if the response json doesn't have the expected properties.
+    """
+    pass
+
 
 class DeleteError(Exception):
     """

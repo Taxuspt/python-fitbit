@@ -303,6 +303,28 @@ class ResourceAccessTest(TestBase):
         qualifier = None
         self.common_api_test('activity_stats', (), dict(user_id=user_id, qualifier=qualifier), (URLBASE + "/%s/activities.json" % user_id,), {})
 
+    def test_activity_logs_list(self):
+        user_id = "O B 1 Kenobi"
+        before_date = '2019-01-01'
+        after_date = '2019-03-01'
+        url = "%s/%s/user/-/activities/list.json" % (Fitbit.API_ENDPOINT, Fitbit.API_VERSION)
+        self.verify_raises('activity_logs_list', (), {'user_id': None}, ValueError)
+        self.verify_raises('activity_logs_list', (), {'user_id': user_id}, ValueError)
+
+        with mock.patch('fitbit.api.Fitbit._get_activities') as act_log:
+            fb = Fitbit('x', 'y')
+            retval = fb.activity_logs_list(before_date=before_date)
+        args, kwargs = act_log.call_args
+        self.assertEqual(url, kwargs['url'])
+        self.assertEqual({'sort': 'desc', 'afterDate': None, 'beforeDate': '2019-01-01', 'limit': 20, 'offset': 0}, kwargs['params'])
+
+        with mock.patch('fitbit.api.Fitbit._get_activities') as act_log:
+            fb = Fitbit('x', 'y')
+            retval = fb.activity_logs_list(after_date=after_date)
+        args, kwargs = act_log.call_args
+        self.assertEqual(url, kwargs['url'])
+        self.assertEqual({'sort': 'asc', 'afterDate': '2019-03-01', 'beforeDate': None, 'limit': 20, 'offset': 0}, kwargs['params'])
+
     def test_body_fat_goal(self):
         self.common_api_test(
             'body_fat_goal', (), dict(),

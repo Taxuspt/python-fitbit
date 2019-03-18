@@ -618,6 +618,67 @@ class Fitbit(object):
         )
         return self.make_request(url)
 
+    def _get_activities(self, url, params=None):
+        def logs_list(url, params=None):
+            rsp = self.make_request(url, params=params)
+            if all([key in rsp for key in ['activities', 'pagination']]):
+                return rsp['activities'], rsp['pagination']
+            else:
+                raise exceptions.BadFormat(rsp)
+
+        while True:
+            activities, pagination = logs_list(url, params=params)
+            for act in activities:
+                yield act
+            if pagination['next']:
+                url = pagination['next']
+                params = None
+            else:
+                break
+
+    def activity_logs_list(self, user_id=None, before_date=None, after_date=None):
+        """
+        Implements the following API
+
+        * https://dev.fitbit.com/docs/activity/#get-activity-logs-list
+
+        Arguments
+        ----------
+        * ``before_date`` : str
+            The date in the format yyyy-MM-ddTHH:mm:ss.
+            Only yyyy-MM-dd is required.
+            Either before_date or after_date must be specified.
+
+        * ``after_date`` : str
+            The date in the format yyyy-MM-ddTHH:mm:ss.
+            Only yyyy-MM-dd is required.
+            Either before_date or after_date must be specified.
+
+        Return
+        ------
+        activities : generator
+            A generator of activities.
+        """
+        if all(v is None for v in {before_date, after_date}):
+            raise ValueError('either before_date or after_date is required')
+
+        if isinstance(before_date, str):
+            sort = 'desc'
+        else:
+            sort = 'asc'
+        url = "{0}/{1}/user/{2}/activities/list.json".format(
+            *self._get_common_args(user_id)
+        )
+        params = {
+            'beforeDate' : before_date,
+            'afterDate' : after_date,
+            'sort' : sort,
+            'limit' : 20,
+            'offset' : 0
+        }
+
+        return self._get_activities(url=url, params=params)
+
     def _food_stats(self, user_id=None, qualifier=''):
         """
         This builds the convenience methods on initialization::
